@@ -1,5 +1,5 @@
 # MyWork
 
-Due to the nature of my work and the institution I work at, some code will need to remain private.
+Due to the certain reasons, my code will remain private and only accessible to those who need read-only access.
 
 Please refrain from sharing my code outside of my repository.
