@@ -80,40 +80,48 @@ def client_key_validator(client_key):
 # OAuth 1.0 endpoint setup
 endpoint = SignatureOnlyEndpoint(client_key_validator)
 
+# Helper function to refresh access token
 def get_access_token():
+    """Refresh and retrieve an access token."""
     global REFRESH_TOKEN
+    try:
+        logger.debug("Refreshing access token...")
+        data = {
+            'grant_type': 'refresh_token',
+            'refresh_token': REFRESH_TOKEN,
+            'client_id': CLIENT_ID,
+            'client_secret': CLIENT_SECRET
+        }
+        response = requests.post(AUTH_URL, data=data)
+        if response.status_code != 200:
+            logger.error(f"Failed to refresh access token: {response.text}")
+            raise Exception("Access token refresh failed")
+        tokens = response.json()
+        new_access_token = tokens['access_token']
+        new_refresh_token = tokens.get('refresh_token')
+        if new_refresh_token and new_refresh_token != REFRESH_TOKEN:
+            update_env_file('REFRESH_TOKEN', new_refresh_token)
+            REFRESH_TOKEN = new_refresh_token
+        return new_access_token
+    except Exception as e:
+        logger.error(f"Error refreshing access token: {e}")
+        raise
 
-    logging.debug("Attempting to get access token")
-    data = {
-        'grant_type': 'refresh_token',
-        'refresh_token': REFRESH_TOKEN,
-        'client_id': CLIENT_ID,
-        'client_secret': CLIENT_SECRET
-    }
-    response = requests.post(AUTH_URL, data=data)
-
-    logging.debug(f"Access token request status: {response.status_code}")
-    if response.status_code != 200:
-        logging.error(f"Error response: {response.text}")
-        raise Exception('Failed to refresh access token')
-
-    tokens = response.json()
-    access_token = tokens['access_token']
-
-    new_refresh_token = tokens.get('refresh_token')
-    if new_refresh_token and new_refresh_token != REFRESH_TOKEN:
-        logging.debug("Updating refresh token")
+def update_env_file(key, value):
+    """Update a specific key-value pair in the .env file."""
+    try:
         with open('.env', 'r') as file:
             lines = file.readlines()
         with open('.env', 'w') as file:
             for line in lines:
-                if line.startswith('REFRESH_TOKEN'):
-                    file.write(f'REFRESH_TOKEN={new_refresh_token}\n')
+                if line.startswith(f'{key}='):
+                    file.write(f'{key}={value}\n')
                 else:
                     file.write(line)
-        REFRESH_TOKEN = new_refresh_token
-
-    return access_token
+            if not any(line.startswith(f'{key}=') for line in lines):
+                file.write(f'{key}={value}\n')
+    except Exception as e:
+        logger.error(f"Failed to update .env file: {e}")
 
 def get_headers():
     access_token = get_access_token()
