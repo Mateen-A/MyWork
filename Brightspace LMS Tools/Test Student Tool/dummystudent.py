@@ -158,28 +158,6 @@ def validate_request(request):
         logging.error("OAuth1Error: %s", e)
         return False
 
-def update_env_file(key, value):
-    """Update the .env file with the new key-value pair."""
-    try:
-        with open('.env', 'r') as file:
-            lines = file.readlines()
-
-        with open('.env', 'w') as file:
-            for line in lines:
-                if line.startswith(f'{key}='):
-                    file.write(f'{key}={value}\n')
-                else:
-                    file.write(line)
-
-        # If the key does not exist, add it to the end of the file
-        if not any(line.startswith(f'{key}=') for line in lines):
-            with open('.env', 'a') as file:
-                file.write(f'{key}={value}\n')
-
-        logging.debug(f"Updated {key} in .env file with value: {value}")
-    except Exception as e:
-        logging.error(f"Failed to update .env file: {e}")
-
 @app.route('/#######')
 def healthcheck():
     return render_template('#####.html')
